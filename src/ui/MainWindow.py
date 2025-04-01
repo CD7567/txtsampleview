@@ -1,5 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QMainWindow,QWidget, QVBoxLayout, QPushButton
+from PySide6.QtGui import QIcon
 
 from src.ui.ScatterPlot import ScatterPlot
 
@@ -20,6 +21,7 @@ class MainWindow(QMainWindow):
         self.central_widget.setLayout(self.layout)
 
         # Creating widgets
+        self.initMenuBar()
         self.button = QPushButton("Push me")
         self.plot = ScatterPlot()
 
@@ -29,3 +31,9 @@ class MainWindow(QMainWindow):
 
         # Signal management
         self.button.clicked.connect(self.plot.update)
+
+    def initMenuBar(self):
+        menuBar = self.menuBar()
+
+        fileMenu = menuBar.addMenu("File")
+        fileMenu.addAction("Open")
