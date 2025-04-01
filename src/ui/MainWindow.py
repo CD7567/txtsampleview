@@ -1,16 +1,17 @@
-import sys
-from PyQt6.QtWidgets import QMainWindow,QWidget, QVBoxLayout, QPushButton
-from PySide6.QtGui import QIcon
+from PyQt6.QtCore import pyqtSignal, pyqtSlot
+from PyQt6.QtWidgets import QMainWindow,QWidget, QVBoxLayout, QFileDialog
 
 from src.ui.ScatterPlot import ScatterPlot
 
 class MainWindow(QMainWindow):
+    fileOpenSignal = pyqtSignal(str)
+
     def __init__(self):
         super().__init__()
 
         # Set basic window attributes
         self.setWindowTitle("txtSampleView")
-        self.setGeometry(100, 100, 600, 400)  # x, y, width, height
+        self.setGeometry(0, 0, 1920, 1080)  # x, y, width, height
 
         # Create central widget
         self.central_widget = QWidget()
@@ -22,18 +23,25 @@ class MainWindow(QMainWindow):
 
         # Creating widgets
         self.initMenuBar()
-        self.button = QPushButton("Push me")
         self.plot = ScatterPlot()
 
         # Adding widgets into layout
-        self.layout.addWidget(self.button)
         self.layout.addWidget(self.plot)
 
         # Signal management
-        self.button.clicked.connect(self.plot.update)
+        self.fileOpenSignal.connect(self.plot.updateFromFile)
 
     def initMenuBar(self):
         menuBar = self.menuBar()
 
         fileMenu = menuBar.addMenu("File")
-        fileMenu.addAction("Open")
+        fopenAction = fileMenu.addAction("Open")
+        fopenAction.triggered.connect(self.raiseFileOpenModal)
+
+    @pyqtSlot(name="emitFOpen")
+    def raiseFileOpenModal(self):
+        file_dialog = QFileDialog(self, "Choose csv file")
+        file_path, _ = file_dialog.getOpenFileName(self)
+
+        if file_path:
+            self.fileOpenSignal.emit(file_path)
