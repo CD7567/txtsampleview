@@ -2,10 +2,10 @@ import numpy as np
 from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtWidgets import QDockWidget
 
-from src.ui.BottomDock.PointTableWidget import PointTableWidget
+from src.ui.SelectionDock.PointTableWidget import PointTableWidget
 
 
-class BottomDock(QDockWidget):
+class SelectionDock(QDockWidget):
     def __init__(self):
         super().__init__()
 
