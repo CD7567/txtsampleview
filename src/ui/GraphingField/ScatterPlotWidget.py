@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt6.QtCore import pyqtSlot, pyqtSignal, Qt
-from PyQt6.QtGui import QMouseEvent
 from pyqtgraph import PlotWidget
 
 
@@ -21,8 +20,11 @@ class ScatterPlotWidget(PlotWidget):
     roiRect = None
     scatterItem = None
 
+    dtypeWithLabel = [("x", "<f8"), ("y", "f8"), ("label", "O"), ("data", "O")]
+    dtypeWithoutLabel = [("x", "<f8"), ("y", "f8"), ("data", "O")]
+
     sigDockControl = pyqtSignal(bool)
-    sigItemsSelected = pyqtSignal(np.ndarray, list)
+    sigItemsSelected = pyqtSignal(np.ndarray)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -88,12 +90,10 @@ class ScatterPlotWidget(PlotWidget):
             (self.scatterItem.data['x'] <= roiPos[0] + roiSize[0]) &
             (self.scatterItem.data['y'] >= roiPos[1]) &
             (self.scatterItem.data['y'] <= roiPos[1] + roiSize[1])
-        ]
+            ]
 
         if self.displayLabel:
-            dtype = [("x", "<f8"), ("y", "f8"), ("label", "O"), ("data", "O")]
-
-            formatted = np.zeros(len(selected), dtype=dtype)
+            formatted = np.zeros(len(selected), dtype=self.dtypeWithLabel)
 
             formatted["x"] = selected["x"]
             formatted["y"] = selected["y"]
@@ -102,17 +102,15 @@ class ScatterPlotWidget(PlotWidget):
                 formatted["label"][idx] = piece[0]
                 formatted["data"][idx] = piece[1]
 
-            self.sigItemsSelected.emit(formatted, ["x", "y", "label", "data"])
+            self.sigItemsSelected.emit(formatted)
         else:
-            dtype = [("x", "<f8"), ("y", "f8"), ("data", "O")]
-
-            formatted = np.zeros(len(selected), dtype=dtype)
+            formatted = np.zeros(len(selected), dtype=self.dtypeWithoutLabel)
 
             formatted["x"] = selected["x"]
             formatted["y"] = selected["y"]
             formatted["data"] = selected["data"]
 
-            self.sigItemsSelected.emit(formatted, ["x", "y", "data"])
+            self.sigItemsSelected.emit(formatted)
 
         self.sigDockControl.emit(True)
 
@@ -160,6 +158,7 @@ class ScatterPlotWidget(PlotWidget):
         colorIt = cycle(self.colormap)
 
         self.clear()
+        self.sigDockControl.emit(False)
 
         if 'label' in csv.columns:
             grouped = csv.groupby('label')
@@ -176,6 +175,8 @@ class ScatterPlotWidget(PlotWidget):
                     brush=pg.mkBrush(next(colorIt)),
                     hoverable=True
                 )
+
+            self.sigItemsSelected.emit(np.ndarray(0, dtype=self.dtypeWithLabel))
         else:
             self.scatterItem = pg.ScatterPlotItem(
                 x=csv["x"],
@@ -186,5 +187,7 @@ class ScatterPlotWidget(PlotWidget):
                 brush=pg.mkBrush(next(colorIt)),
                 hoverable=True
             )
+
+            self.sigItemsSelected.emit(np.ndarray(0, dtype=self.dtypeWithoutLabel))
 
         self.addItem(self.scatterItem)

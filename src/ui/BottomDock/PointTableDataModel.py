@@ -2,11 +2,11 @@ from PyQt6.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 
 class PointTableDataModel(QAbstractTableModel):
-    def __init__(self, data, headers, parent=None):
+    def __init__(self, data, parent=None):
         super().__init__(parent)
 
         self.data = data
-        self.headers = headers
+        self.headers = data.dtype.names
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.data)
@@ -33,8 +33,3 @@ class PointTableDataModel(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.headers[section]
         return None
-
-    def updateData(self, data):
-        self.beginResetModel()
-        self.data = data
-        self.endResetModel()
