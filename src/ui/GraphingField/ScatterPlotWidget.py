@@ -58,6 +58,10 @@ class ScatterPlotWidget(PlotWidget):
         self.setLabel('left', 'Y Axis')
         self.autoRange()
 
+        # Configure ROI
+        self.resetRoiRect()
+        self.roiRect.sigRegionChanged.connect(self.updateRoiSelected)
+
     def mousePressEvent(self, event):
         if self.scrollEnabled:
             super().mousePressEvent(event)
@@ -79,6 +83,37 @@ class ScatterPlotWidget(PlotWidget):
 
         self.drawRoiRect = False
 
+    def mouseMoveEvent(self, event):
+        if self.scrollEnabled:
+            super().mouseMoveEvent(event)
+            return
+
+        if self.initialMousePos is None or not self.drawRoiRect:
+            return
+
+        mousePos = self.plotItem.vb.mapSceneToView(event.position())
+        bottomLeft = [min(self.initialMousePos.x(), mousePos.x()), min(self.initialMousePos.y(), mousePos.y())]
+        topRight = [max(self.initialMousePos.x(), mousePos.x()), max(self.initialMousePos.y(), mousePos.y())]
+        self.roiRect.setPos(bottomLeft)
+        self.roiRect.setSize([topRight[0] - bottomLeft[0], topRight[1] - bottomLeft[1]])
+
+    def resetRoiRect(self):
+        if self.roiRect is None:
+            self.roiRect = pg.RectROI(
+                pos=[0, 0],
+                size=[0, 0],
+                rotatable=False,
+                invertible=True,
+                pen=pg.mkPen([200, 200, 200], width=2, style=pg.QtCore.Qt.PenStyle.DotLine),
+                hoverPen=pg.mkPen([255, 255, 255], width=2, style=pg.QtCore.Qt.PenStyle.DashLine)
+            )
+
+            self.roiRect.setZValue(1000)
+        elif self.roiRect in self.items():
+            self.removeItem(self.roiRect)
+
+    @pyqtSlot()
+    def updateRoiSelected(self):
         roiPos = self.roiRect.pos()
         roiSize = self.roiRect.size()
 
@@ -113,35 +148,6 @@ class ScatterPlotWidget(PlotWidget):
             self.sigItemsSelected.emit(formatted)
 
         self.sigDockControl.emit(True)
-
-    def mouseMoveEvent(self, event):
-        if self.scrollEnabled:
-            super().mouseMoveEvent(event)
-            return
-
-        if self.initialMousePos is None or not self.drawRoiRect:
-            return
-
-        mousePos = self.plotItem.vb.mapSceneToView(event.position())
-        bottomLeft = [min(self.initialMousePos.x(), mousePos.x()), min(self.initialMousePos.y(), mousePos.y())]
-        topRight = [max(self.initialMousePos.x(), mousePos.x()), max(self.initialMousePos.y(), mousePos.y())]
-        self.roiRect.setPos(bottomLeft)
-        self.roiRect.setSize([topRight[0] - bottomLeft[0], topRight[1] - bottomLeft[1]])
-
-    def resetRoiRect(self):
-        if self.roiRect is None:
-            self.roiRect = pg.RectROI(
-                pos=[0, 0],
-                size=[0, 0],
-                rotatable=False,
-                invertible=True,
-                pen=pg.mkPen([200, 200, 200], width=2, style=pg.QtCore.Qt.PenStyle.DotLine),
-                hoverPen=pg.mkPen([255, 255, 255], width=2, style=pg.QtCore.Qt.PenStyle.DashLine)
-            )
-
-            self.roiRect.setZValue(1000)
-        elif self.roiRect in self.items():
-            self.removeItem(self.roiRect)
 
     @pyqtSlot()
     def activateMoveTool(self):
