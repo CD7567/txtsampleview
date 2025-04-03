@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 
-from src.ui.graphingField.GraphControlToolbar import GraphControlToolbar
-from src.ui.graphingField.ScatterPlotWidget import ScatterPlotWidget
+from src.ui.GraphingField.GraphControlToolbar import GraphControlToolbar
+from src.ui.GraphingField.ScatterPlotWidget import ScatterPlotWidget
 
 
 class GraphingFieldWidget(QWidget):
@@ -22,3 +22,7 @@ class GraphingFieldWidget(QWidget):
         # Add widgets to layout
         self.layout().addWidget(self.toolbar)
         self.layout().addWidget(self.scatterPlot)
+
+        # Manage signals
+        self.toolbar.moveToolToggledOn.connect(self.scatterPlot.activateMoveTool)
+        self.toolbar.selectToolToggledOn.connect(self.scatterPlot.activateSelectTool)

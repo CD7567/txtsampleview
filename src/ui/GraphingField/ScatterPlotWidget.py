@@ -1,7 +1,7 @@
 from itertools import cycle
 
-import pyqtgraph as pg
 import pandas as pd
+import pyqtgraph as pg
 from PyQt6.QtCore import pyqtSlot
 from pyqtgraph import PlotWidget
 
@@ -10,6 +10,11 @@ class ScatterPlotWidget(PlotWidget):
     """
     Graphing canvas
     """
+
+    scrollEnabled = True
+    drawRoiRect = False
+    initialMousePos = None
+    roiRect = None
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -43,6 +48,62 @@ class ScatterPlotWidget(PlotWidget):
         self.setLabel('left', 'Y Axis')
         self.autoRange()
 
+    def mousePressEvent(self, event):
+        if self.scrollEnabled:
+            super().mousePressEvent(event)
+            return
+
+        self.resetRoiRect()
+        self.drawRoiRect = True
+        self.initialMousePos = self.plotItem.vb.mapSceneToView(event.position())
+
+    def mouseReleaseEvent(self, event):
+        if self.scrollEnabled:
+            super().mouseReleaseEvent(event)
+            return
+
+        self.drawRoiRect = False
+        self.plotItem
+
+    def mouseMoveEvent(self, event):
+        if self.scrollEnabled:
+            super().mouseMoveEvent(event)
+            return
+
+        if self.initialMousePos is None or not self.drawRoiRect:
+            return
+
+        mousePos = self.plotItem.vb.mapSceneToView(event.position())
+        bottomLeft = [min(self.initialMousePos.x(), mousePos.x()), min(self.initialMousePos.y(), mousePos.y())]
+        topRight = [max(self.initialMousePos.x(), mousePos.x()), max(self.initialMousePos.y(), mousePos.y())]
+        self.roiRect.setPos(bottomLeft)
+        self.roiRect.setSize([topRight[0] - bottomLeft[0], topRight[1] - bottomLeft[1]])
+
+    def resetRoiRect(self):
+        if self.roiRect in self.items():
+            self.removeItem(self.roiRect)
+
+        self.initialMousePos = None
+
+        self.roiRect = pg.RectROI(
+            pos=[-1, -1],
+            size=[0, 0],
+            rotatable=False,
+            invertible=True,
+            pen=pg.mkPen([200, 200, 200], width=2, style=pg.QtCore.Qt.PenStyle.DotLine),
+            hoverPen=pg.mkPen([255, 255, 255], width=2, style=pg.QtCore.Qt.PenStyle.DashLine)
+        )
+
+        self.addItem(self.roiRect)
+        self.roiRect.setZValue(1000)
+
+    @pyqtSlot()
+    def activateMoveTool(self):
+        self.scrollEnabled = True
+
+    @pyqtSlot()
+    def activateSelectTool(self):
+        self.scrollEnabled = False
 
     @pyqtSlot(str, name="csvUpdate")
     def updateFromFile(self, filename):
