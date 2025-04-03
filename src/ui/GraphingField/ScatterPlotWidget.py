@@ -18,7 +18,7 @@ class ScatterPlotWidget(PlotWidget):
 
     initialMousePos = None
     roiRect = None
-    scatterItem = None
+    scatterItems = None
 
     dtypeWithLabel = [("x", "<f8"), ("y", "f8"), ("label", "O"), ("data", "O")]
     dtypeWithoutLabel = [("x", "<f8"), ("y", "f8"), ("data", "O")]
@@ -117,15 +117,15 @@ class ScatterPlotWidget(PlotWidget):
         roiPos = self.roiRect.pos()
         roiSize = self.roiRect.size()
 
-        if self.scatterItem is None:
+        if self.scatterItems is None:
             return
 
-        selected = self.scatterItem.data[
-            (self.scatterItem.data['x'] >= roiPos[0]) &
-            (self.scatterItem.data['x'] <= roiPos[0] + roiSize[0]) &
-            (self.scatterItem.data['y'] >= roiPos[1]) &
-            (self.scatterItem.data['y'] <= roiPos[1] + roiSize[1])
-            ]
+        selected = np.concatenate([item.data[
+                                       (item.data['x'] >= roiPos[0]) &
+                                       (item.data['x'] <= roiPos[0] + roiSize[0]) &
+                                       (item.data['y'] >= roiPos[1]) &
+                                       (item.data['y'] <= roiPos[1] + roiSize[1])
+                                       ] for item in self.scatterItems])
 
         if self.displayLabel:
             formatted = np.zeros(len(selected), dtype=self.dtypeWithLabel)
@@ -171,20 +171,19 @@ class ScatterPlotWidget(PlotWidget):
 
             self.displayLabel = True
 
-            for label, group in grouped:
-                self.scatterItem = pg.ScatterPlotItem(
-                    x=group["x"],
-                    y=group["y"],
-                    data=group.apply(lambda row: (row['label'], row['data']), axis=1),
-                    size=10,
-                    pen=pg.mkPen(None),
-                    brush=pg.mkBrush(next(colorIt)),
-                    hoverable=True
-                )
+            self.scatterItems = [pg.ScatterPlotItem(
+                x=group["x"],
+                y=group["y"],
+                data=group.apply(lambda row: (row['label'], row['data']), axis=1),
+                size=10,
+                pen=pg.mkPen(None),
+                brush=pg.mkBrush(next(colorIt)),
+                hoverable=True
+            ) for label, group in grouped]
 
             self.sigItemsSelected.emit(np.ndarray(0, dtype=self.dtypeWithLabel))
         else:
-            self.scatterItem = pg.ScatterPlotItem(
+            self.scatterItems = [pg.ScatterPlotItem(
                 x=csv["x"],
                 y=csv["y"],
                 data=csv["data"],
@@ -192,8 +191,9 @@ class ScatterPlotWidget(PlotWidget):
                 pen=pg.mkPen(None),
                 brush=pg.mkBrush(next(colorIt)),
                 hoverable=True
-            )
+            )]
 
             self.sigItemsSelected.emit(np.ndarray(0, dtype=self.dtypeWithoutLabel))
 
-        self.addItem(self.scatterItem)
+        for item in self.scatterItems:
+            self.addItem(item)
