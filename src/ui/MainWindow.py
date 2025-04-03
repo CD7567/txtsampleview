@@ -1,7 +1,9 @@
 import qtawesome as qta
+from PyQt6.QtCore import Qt
 from PyQt6.QtCore import pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog
 
+from src.ui.BottomDock.BottomDock import BottomDock
 from src.ui.GraphingField.GraphingFieldWidget import GraphingFieldWidget
 
 
@@ -18,6 +20,7 @@ class MainWindow(QMainWindow):
         # Create central widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
+        self.dock = BottomDock()
 
         # Create central widget layout
         self.layout = QVBoxLayout()
@@ -26,12 +29,15 @@ class MainWindow(QMainWindow):
         # Create widgets
         self.initMenuBar()
         self.plot = GraphingFieldWidget()
+        self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock)
 
         # Add widgets into layout
         self.layout.addWidget(self.plot)
 
         # Signal management
         self.fileOpenSignal.connect(self.plot.scatterPlot.updateFromFile)
+        self.plot.scatterPlot.sigDockControl.connect(self.dock.slotVisible)
+        self.plot.scatterPlot.sigItemsSelected.connect(self.dock.slotSelect)
 
     def initMenuBar(self):
         """
