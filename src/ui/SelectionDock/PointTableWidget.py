@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt6.QtWidgets import QTableView, QHeaderView
 
-from src.ui.BottomDock.PointTableDataModel import PointTableDataModel
+from src.ui.SelectionDock.PointTableDataModel import PointTableDataModel
 
 
 class PointTableWidget(QTableView):
