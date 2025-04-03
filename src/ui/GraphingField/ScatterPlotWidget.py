@@ -1,8 +1,9 @@
 from itertools import cycle
 
+import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import pyqtSlot, pyqtSignal
 from pyqtgraph import PlotWidget
 
 
@@ -13,8 +14,14 @@ class ScatterPlotWidget(PlotWidget):
 
     scrollEnabled = True
     drawRoiRect = False
+    displayLabel = False
+
     initialMousePos = None
     roiRect = None
+    scatterItem = None
+
+    sigDockControl = pyqtSignal(bool)
+    sigItemsSelected = pyqtSignal(np.ndarray, list)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,7 +70,42 @@ class ScatterPlotWidget(PlotWidget):
             return
 
         self.drawRoiRect = False
-        self.plotItem
+
+        roiPos = self.roiRect.pos()
+        roiSize = self.roiRect.size()
+
+        selected = self.scatterItem.data[
+            (self.scatterItem.data['x'] >= roiPos[0]) &
+            (self.scatterItem.data['x'] <= roiPos[0] + roiSize[0]) &
+            (self.scatterItem.data['y'] >= roiPos[1]) &
+            (self.scatterItem.data['y'] <= roiPos[1] + roiSize[1])
+        ]
+
+        if self.displayLabel:
+            dtype = [("x", "<f8"), ("y", "f8"), ("label", "O"), ("data", "O")]
+
+            formatted = np.zeros(len(selected), dtype=dtype)
+
+            formatted["x"] = selected["x"]
+            formatted["y"] = selected["y"]
+
+            for idx, piece in enumerate(selected["data"]):
+                formatted["label"][idx] = piece[0]
+                formatted["data"][idx] = piece[1]
+
+            self.sigItemsSelected.emit(formatted, ["x", "y", "label", "data"])
+        else:
+            dtype = [("x", "<f8"), ("y", "f8"), ("data", "O")]
+
+            formatted = np.zeros(len(selected), dtype=dtype)
+
+            formatted["x"] = selected["x"]
+            formatted["y"] = selected["y"]
+            formatted["data"] = selected["data"]
+
+            self.sigItemsSelected.emit(formatted, ["x", "y", "data"])
+
+        self.sigDockControl.emit(True)
 
     def mouseMoveEvent(self, event):
         if self.scrollEnabled:
@@ -116,25 +158,27 @@ class ScatterPlotWidget(PlotWidget):
         if 'label' in csv.columns:
             grouped = csv.groupby('label')
 
+            self.displayLabel = True
+
             for label, group in grouped:
-                scatter = pg.ScatterPlotItem(
-                    x=group['x'],
-                    y=group['y'],
-                    data=group.apply(lambda row: "[{}] {}".format(row['label'], row['data']), axis=1),
+                self.scatterItem = pg.ScatterPlotItem(
+                    x=group["x"],
+                    y=group["y"],
+                    data=group.apply(lambda row: (row['label'], row['data']), axis=1),
                     size=10,
                     pen=pg.mkPen(None),
                     brush=pg.mkBrush(next(colorIt)),
                     hoverable=True
                 )
-                self.addItem(scatter)
         else:
-            scatter = pg.ScatterPlotItem(
-                x=csv['x'],
-                y=csv['y'],
-                data=csv['data'],
+            self.scatterItem = pg.ScatterPlotItem(
+                x=csv["x"],
+                y=csv["y"],
+                data=csv["data"],
                 size=10,
                 pen=pg.mkPen(None),
                 brush=pg.mkBrush(next(colorIt)),
                 hoverable=True
             )
-            self.addItem(scatter)
+
+        self.addItem(self.scatterItem)
