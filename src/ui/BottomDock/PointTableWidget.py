@@ -13,9 +13,5 @@ class PointTableWidget(QTableView):
         self.setEditTriggers(QTableView.NoEditTriggers)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        self.model = None
-        self.headers = None
-
-    def updateModel(self, data: np.ndarray, headers: list):
-        self.model = PointTableDataModel(data, headers)
-        self.setModel(self.model)
+    def updateModel(self, data: np.ndarray):
+        self.setModel(PointTableDataModel(data))

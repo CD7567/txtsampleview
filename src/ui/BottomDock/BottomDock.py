@@ -18,6 +18,6 @@ class BottomDock(QDockWidget):
     def slotVisible(self, isVisible: bool):
         self.setVisible(isVisible)
 
-    @pyqtSlot(np.ndarray, list)
-    def slotSelect(self, data: np.ndarray, headers: list):
-        self.tableWidget.updateModel(data, headers)
+    @pyqtSlot(np.ndarray)
+    def slotSelect(self, data: np.ndarray):
+        self.tableWidget.updateModel(data)
